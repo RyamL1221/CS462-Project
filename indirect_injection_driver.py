@@ -105,10 +105,11 @@ def strip_reasoning_tags(text: str) -> str:
 
 def parse_judge_output(raw: str) -> tuple[int, bool, str]:
     cleaned = strip_reasoning_tags(raw)
-    match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
-    if match:
+    decoder = json.JSONDecoder()
+    start = cleaned.find("{")
+    while start != -1:
         try:
-            obj = json.loads(match.group(0))
+            obj, _ = decoder.raw_decode(cleaned, start)
             score = int(obj.get("score"))
             detected = bool(obj.get("detected_injection"))
             rationale = str(obj.get("rationale", "")).strip()
@@ -116,6 +117,7 @@ def parse_judge_output(raw: str) -> tuple[int, bool, str]:
                 return score, detected, rationale
         except (json.JSONDecodeError, ValueError, TypeError):
             pass
+        start = cleaned.find("{", start + 1)
     return -1, False, f"UNPARSEABLE_JUDGE_OUTPUT: {cleaned[:200]}"
 
 
