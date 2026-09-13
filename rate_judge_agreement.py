@@ -10,8 +10,8 @@ judge's verdict. Progress is saved after every item, so you can quit and
 resume later without losing work or re-seeing already-rated items.
 
 Usage:
-    python rate_judge_agreement.py --input phase1_results.csv --sample-size 60
-    python rate_judge_agreement.py --input phase1_results.csv --report   # after rating, show agreement stats
+    python rate_judge_agreement.py --input prompt_engineering_results.csv --sample-size 60
+    python rate_judge_agreement.py --input prompt_engineering_results.csv --report   # after rating, show agreement stats
 """
 
 import argparse

@@ -26,7 +26,7 @@ from pathlib import Path
 
 import requests
 
-logger = logging.getLogger("phase1_driver")
+logger = logging.getLogger("direct_prompt_engineering_driver")
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 
