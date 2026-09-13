@@ -88,20 +88,35 @@ def strip_reasoning_tags(text: str) -> str:
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
 
-def parse_judge_output(raw: str) -> tuple[int, str]:
-    cleaned = strip_reasoning_tags(raw)
+def _scan_json_object(text: str) -> dict | None:
     decoder = json.JSONDecoder()
-    start = cleaned.find("{")
+    start = text.find("{")
     while start != -1:
         try:
-            obj, _ = decoder.raw_decode(cleaned, start)
+            obj, _ = decoder.raw_decode(text, start)
+            return obj
+        except (json.JSONDecodeError, ValueError):
+            pass
+        start = text.find("{", start + 1)
+    return None
+
+
+def parse_judge_output(raw: str) -> tuple[int, str]:
+    cleaned = strip_reasoning_tags(raw)
+    obj = _scan_json_object(cleaned)
+    if obj is None:
+        # deepseek-r1 occasionally over-escapes string values (e.g. "rationale": \"text\"
+        # instead of "rationale": "text"), which is invalid JSON regardless of where we
+        # start scanning. Normalize spurious backslash-quotes and retry once.
+        obj = _scan_json_object(cleaned.replace('\\"', '"'))
+    if obj is not None:
+        try:
             score = int(obj.get("score"))
             rationale = str(obj.get("rationale", "")).strip()
             if score in (0, 1, 2):
                 return score, rationale
-        except (json.JSONDecodeError, ValueError, TypeError):
+        except (ValueError, TypeError):
             pass
-        start = cleaned.find("{", start + 1)
     # Fallback: couldn't parse a clean verdict -- flag it rather than guessing.
     return -1, f"UNPARSEABLE_JUDGE_OUTPUT: {cleaned[:200]}"
 
